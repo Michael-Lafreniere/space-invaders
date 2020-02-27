@@ -9,12 +9,14 @@ const KEY_RIGHT = 39;
 const PLAYER_Y_OFFSET = 45;
 const PLAYER_WIDTH = 20;
 const PLAYER_MAX_SPEED = 450;
-let PLAYER_SCORE = 0;
 
 const LASER_MAX_SPEED = 250;
 const LASER_COOLDOWN = 0.45;
+let ENEMY_LASER_MAX_SPEED = 250;
+let ENEMY_LASER_COOLDOWN = 0.45;
 
 const ENEMIES_PER_ROW = 8;
+const ENEMY_SHIP_VALUE = 50;
 const ENEMY_EDGE_PADDING = 65;
 const ENEMY_VERT_PADDING = 70;
 const ENEMY_VERT_SPACING = 80;
@@ -25,6 +27,8 @@ const ENEMY_SPACING =
 const GAME_STATE = {
   playerX: 0,
   playerY: 0,
+  playerScore: 0,
+  playerLevel: 0,
   playerLaserCoolDown: 0,
   rightPressed: false,
   leftPressed: false,
@@ -32,7 +36,10 @@ const GAME_STATE = {
   lastTime: Date.now(),
   lasers: [],
   enemies: [],
-  enemyLasers: []
+  enemyLasers: [],
+  gameOver: false,
+  gameWon: false,
+  gameStart: false
 };
 
 // Array of available enemy ship color options:
@@ -127,7 +134,7 @@ const updateShots = dt => {
         if (intersect(rect1, rect2)) {
           destroyEnemy(enemy);
           destroyShot(laser);
-          PLAYER_SCORE += 100;
+          GAME_STATE.playerScore += ENEMY_SHIP_VALUE;
           break;
         }
       }
@@ -147,6 +154,12 @@ const createPlayer = container => {
   player.className = 'player';
   container.appendChild(player);
   setPosition(player, GAME_STATE.playerX, GAME_STATE.playerY);
+};
+
+const destroyPlayer = () => {
+  const player = document.querySelector('.player');
+  gameContainer.removeChild(player);
+  GAME_STATE.gameOver = true;
 };
 
 const updatePlayer = dt => {
@@ -192,6 +205,8 @@ const createEnemyShip = (x, y, index) => {
 const destroyEnemy = enemy => {
   gameContainer.removeChild(enemy.enemyShip);
   enemy.isDead = true;
+  const destroyEnemyShip = new Audio('assets/Sounds/phaseJump3.ogg');
+  destroyEnemyShip.play();
 };
 
 const updateEnemyShips = dt => {
@@ -212,16 +227,56 @@ const updateEnemyShips = dt => {
   }
 };
 
+const createEnemyShot = (x, y) => {
+  const enemyLaser = document.createElement('img');
+  enemyLaser.src = 'assets/Effects/laserRed01.png';
+  enemyLaser.className = 'enemy-laser';
+  gameContainer.appendChild(enemyLaser);
+  const laser = { x, y, enemyLaser };
+  GAME_STATE.enemyLasers.push(laser);
+  setPosition(enemyLaser, x, y);
+};
+
+const updateEnemyShots = dt => {
+  const shots = GAME_STATE.enemyLasers;
+  for (let i = 0; i < shots.length; i++) {
+    const shot = shots[i];
+    shot.y += dt * LASER_MAX_SPEED;
+    if (shot.y > GAME_AREA_HEIGHT) {
+      destroyShot(shot);
+    }
+    setPosition(shot, shot.x, shot.y);
+    const rect1 = laser.enemyLaser.getBoundingClientRect();
+    const rect2 = document.querySelector('.player').getBoundingClientRect();
+    if (intersect(rect1, rect2)) {
+      destroyPlayer();
+      destroyShot(shot);
+      break;
+    }
+  }
+};
+
 // Main game update loop:
 const update = () => {
+  const score = document.querySelector('.score');
+
   // Calculate the delta time between frames:
   const currentTime = Date.now();
   const dt = (currentTime - GAME_STATE.lastTime) / 1000;
+
+  if (GAME_STATE.gameOver) {
+    document.querySelector('.lost').style.display = 'block';
+    const missionFailed = new Audio('assets/Sounds/mission_failed.ogg');
+    missionFailed.play();
+    return;
+  }
 
   // Update player and player shots:
   updatePlayer(dt);
   updateShots(dt);
   updateEnemyShips(dt);
+
+  score.textContent = `Score: ${GAME_STATE.playerScore}`;
 
   // Update the lastTime to be the currentTime for next frame dt calcs:
   GAME_STATE.lastTime = currentTime;
@@ -231,6 +286,8 @@ const update = () => {
 // Game initialization function:
 const initialize = () => {
   const gameContainer = document.querySelector('.game');
+  const level = document.querySelector('.level');
+  level.textContent = `Score: ${GAME_STATE.playerLevel}`;
 
   // Register event listeners for key up/down:
   window.addEventListener('keydown', onKeyDown);

@@ -66,7 +66,59 @@ main {
         height: 30px;
       }
     }
+
+    .score-level {
+      display: flex;
+      width: 25%;
+      justify-content: space-between;
+      position: absolute;
+      top: 18%;
+      color: white;
+    }
+
+    .won {
+      display: none;
+      position: absolute;
+      background: #e2bb2c;
+      color: white;
+      padding: 20px 50px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      text-align: center;
+      animation: pop-in 1s;
+    }
+
+    .lost {
+      display: none;
+      position: absolute;
+      background: #881e1e;
+      color: white;
+      padding: 20px 50px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      text-align: center;
+      animation: pop-in 1s;
+    }
   }
+}
+
+.restart {
+  color: white;
+  background: blue;
+  border-radius: 7px;
+  padding: 10px 25px;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+}
+
+.next-level {
+  color: white;
+  background: green;
+  border-radius: 7px;
+  padding: 10px 25px;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+  margin-right: 25px;
 }
 
 footer {
