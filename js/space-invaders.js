@@ -9,6 +9,7 @@ const KEY_RIGHT = 39;
 const PLAYER_Y_OFFSET = 45;
 const PLAYER_WIDTH = 20;
 const PLAYER_MAX_SPEED = 450;
+let PLAYER_SCORE = 0;
 
 const LASER_MAX_SPEED = 250;
 const LASER_COOLDOWN = 0.45;
@@ -34,6 +35,7 @@ const GAME_STATE = {
   enemyLasers: []
 };
 
+// Array of available enemy ship color options:
 const enemyShipList = ['Beige', 'Blue', 'Green', 'Pink', 'Yellow'];
 
 // Common DOM element:
@@ -50,6 +52,15 @@ const clamp = (value, min, max) => {
   } else if (value > max) {
     return max;
   } else return value;
+};
+
+const intersect = (rect1, rect2) => {
+  return !(
+    rect2.left > rect1.right ||
+    rect2.right < rect1.left ||
+    rect2.top > rect1.bottom ||
+    rect2.bottom < rect1.top
+  );
 };
 
 const onKeyDown = event => {
@@ -93,8 +104,8 @@ const createShot = (x, y) => {
   laserEffect.play();
 };
 
-const destroyShot = (laser, container) => {
-  container.removeChild(laser.laserContainer);
+const destroyShot = laser => {
+  gameContainer.removeChild(laser.laserContainer);
   laser.isDead = true;
 };
 
@@ -104,9 +115,24 @@ const updateShots = dt => {
     for (let i = 0; i < lasers.length; i++) {
       const laser = lasers[i];
       laser.y -= dt * LASER_MAX_SPEED;
-      if (laser.y < 0) destroyShot(laser, gameContainer);
+      if (laser.y < 0) destroyShot(laser);
       setPosition(laser.laserContainer, laser.x, laser.y);
+      const rect1 = laser.laserContainer.getBoundingClientRect();
+
+      const enemies = GAME_STATE.enemies;
+      for (let j = 0; j < enemies.length; j++) {
+        const enemy = enemies[j];
+        if (enemy.isDead) continue;
+        const rect2 = enemy.enemyShip.getBoundingClientRect();
+        if (intersect(rect1, rect2)) {
+          destroyEnemy(enemy);
+          destroyShot(laser);
+          PLAYER_SCORE += 100;
+          break;
+        }
+      }
     }
+
     // Filter and remove any dead lasers from the array:
     GAME_STATE.lasers = GAME_STATE.lasers.filter(laser => !laser.isDead);
   }
@@ -163,6 +189,11 @@ const createEnemyShip = (x, y, index) => {
   setPosition(enemyShip, x, y);
 };
 
+const destroyEnemy = enemy => {
+  gameContainer.removeChild(enemy.enemyShip);
+  enemy.isDead = true;
+};
+
 const updateEnemyShips = dt => {
   const time = GAME_STATE.lastTime / 1000;
   const dx = Math.sin(time) * 40;
@@ -176,13 +207,13 @@ const updateEnemyShips = dt => {
       const y = enemy.y + dy;
       setPosition(enemy.enemyShip, x, y);
     }
+
+    GAME_STATE.enemies = GAME_STATE.enemies.filter(enemy => !enemy.isDead);
   }
 };
 
 // Main game update loop:
 const update = () => {
-  // const gameContainer = document.querySelector('.game');
-
   // Calculate the delta time between frames:
   const currentTime = Date.now();
   const dt = (currentTime - GAME_STATE.lastTime) / 1000;
