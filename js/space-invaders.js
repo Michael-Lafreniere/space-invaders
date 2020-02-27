@@ -11,7 +11,14 @@ const PLAYER_WIDTH = 20;
 const PLAYER_MAX_SPEED = 450;
 
 const LASER_MAX_SPEED = 250;
-const LASER_COOLDOWN = 0.5;
+const LASER_COOLDOWN = 0.45;
+
+const ENEMIES_PER_ROW = 8;
+const ENEMY_EDGE_PADDING = 65;
+const ENEMY_VERT_PADDING = 70;
+const ENEMY_VERT_SPACING = 80;
+const ENEMY_SPACING =
+  (GAME_AREA_WIDTH - ENEMY_EDGE_PADDING * 2) / (ENEMIES_PER_ROW - 1);
 
 // State:
 const GAME_STATE = {
@@ -22,8 +29,12 @@ const GAME_STATE = {
   leftPressed: false,
   firePressed: false,
   lastTime: Date.now(),
-  lasers: []
+  lasers: [],
+  enemies: [],
+  enemyLasers: []
 };
+
+const enemyShipList = ['Beige', 'Blue', 'Green', 'Pink', 'Yellow'];
 
 // Common DOM element:
 const gameContainer = document.querySelector('.game');
@@ -78,7 +89,6 @@ const createShot = (x, y) => {
   const laser = { x, y, laserContainer };
   GAME_STATE.lasers.push(laser);
   setPosition(laserContainer, x, y);
-  //3
   const laserEffect = new Audio('assets/Sounds/laser3.ogg');
   laserEffect.play();
 };
@@ -141,6 +151,34 @@ const updatePlayer = dt => {
   // console.log(GAME_STATE.playerX, GAME_STATE.playerY);
 };
 
+// Enemy functions:
+const createEnemyShip = (x, y, index) => {
+  const enemyShip = document.createElement('img');
+  const color = enemyShipList[index % 5];
+  enemyShip.src = `assets/Enemies/ship${color}_manned.png`;
+  enemyShip.className = 'enemy';
+  gameContainer.appendChild(enemyShip);
+  const enemy = { x, y, enemyShip };
+  GAME_STATE.enemies.push(enemy);
+  setPosition(enemyShip, x, y);
+};
+
+const updateEnemyShips = dt => {
+  const time = GAME_STATE.lastTime / 1000;
+  const dx = Math.sin(time) * 40;
+  const dy = Math.cos(time) * 10;
+
+  const enemies = GAME_STATE.enemies;
+  if (enemies) {
+    for (let i = 0; i < enemies.length; i++) {
+      const enemy = enemies[i];
+      const x = enemy.x + dx;
+      const y = enemy.y + dy;
+      setPosition(enemy.enemyShip, x, y);
+    }
+  }
+};
+
 // Main game update loop:
 const update = () => {
   // const gameContainer = document.querySelector('.game');
@@ -152,6 +190,7 @@ const update = () => {
   // Update player and player shots:
   updatePlayer(dt);
   updateShots(dt);
+  updateEnemyShips(dt);
 
   // Update the lastTime to be the currentTime for next frame dt calcs:
   GAME_STATE.lastTime = currentTime;
@@ -170,6 +209,13 @@ const initialize = () => {
   createPlayer(gameContainer);
 
   // Create the enemies:
+  for (let j = 0; j < 3; j++) {
+    const y = ENEMY_VERT_PADDING + j * ENEMY_VERT_SPACING;
+    for (let i = 0; i < ENEMIES_PER_ROW; i++) {
+      const x = i * ENEMY_SPACING + ENEMY_SPACING - ENEMY_SPACING / 2;
+      createEnemyShip(x, y, i);
+    }
+  }
 };
 
 // Kick off the update loop:

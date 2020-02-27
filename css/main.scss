@@ -70,7 +70,10 @@ main {
 }
 
 footer {
-  font-size: 11px;
+  position: fixed;
+  width: 100%;
+  bottom: 0;
+  font-size: 15px;
   text-align: center;
   background: #000;
   color: #fff;
