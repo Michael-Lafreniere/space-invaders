@@ -243,11 +243,11 @@ const updateEnemyShips = dt => {
       const x = enemy.x + dx;
       const y = enemy.y + dy;
       setPosition(enemy.enemyShip, x, y);
-      enemy.cooldown -= dt;
-      if (enemy.cooldown <= 0) {
-        createEnemyShot(enemy, x, y);
-        enemy.cooldown = ENEMY_LASER_COOLDOWN;
-      }
+      // enemy.cooldown -= dt;
+      // if (enemy.cooldown <= 0) {
+      //   createEnemyShot(enemy, x, y);
+      //   enemy.cooldown = ENEMY_LASER_COOLDOWN;
+      // }
     }
 
     GAME_STATE.enemies = GAME_STATE.enemies.filter(enemy => !enemy.isDead);
@@ -268,9 +268,7 @@ const createEnemyShot = (x, y) => {
 };
 
 const destroyEnemyShot = shot => {
-  // gameContainer.removeChild(laser.laserContainer);
-  // laser.isDead = true;
-  gameContainer.removeChild(shot);
+  gameContainer.removeChild(shot.enemyLaser);
   shot.isDead = true;
 };
 
@@ -283,15 +281,15 @@ const updateEnemyShots = dt => {
       // destroyEnemyShot(shot.enemyLaser);
     }
     setPosition(shot.enemyLaser, shot.x, shot.y);
-    // const rect1 = laser.enemyLaser.getBoundingClientRect();
-    // const rect2 = document.querySelector('.player').getBoundingClientRect();
-    // if (intersect(rect1, rect2)) {
-    //   // The player was hit:
-    //   destroyPlayer();
-    //   destroyShot(shot);
-    //   GAME_STATE.gameOver = true;
-    //   break;
-    // }
+    const rect1 = laser.enemyLaser.getBoundingClientRect();
+    const rect2 = document.querySelector('.player').getBoundingClientRect();
+    if (intersect(rect1, rect2)) {
+      // The player was hit:
+      destroyPlayer();
+      destroyShot(shot);
+      GAME_STATE.gameOver = true;
+      break;
+    }
   }
 };
 
@@ -360,7 +358,7 @@ const update = () => {
   updatePlayer(dt);
   updateShots(dt);
   updateEnemyShips(dt);
-  updateEnemyShots(dt);
+  // updateEnemyShots(dt);
 
   topScore.textContent = `Top Score: ${GAME_STATE.topScore.toFixed(1)}`;
   level.textContent = `Level: ${GAME_STATE.playerLevel + 1}`;
