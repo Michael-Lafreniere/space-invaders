@@ -67,6 +67,14 @@ main {
       }
     }
 
+    .top-score {
+      display: flex;
+      justify-content: space-between;
+      position: absolute;
+      top: 12%;
+      color: white;
+    }
+
     .score-level {
       display: flex;
       width: 25%;
