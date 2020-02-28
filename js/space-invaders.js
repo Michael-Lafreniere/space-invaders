@@ -130,24 +130,25 @@ const onKeyUp = event => {
 };
 
 // Generic game functions:
-const createShot = (x, y) => {
-  const element = document.createElement('img');
-  element.src = `assets/Effects/laserBlue01.png`;
-  element.className = 'laser';
-  gameContainer.appendChild(element);
-  const laser = { x, y, element };
-  GAME_STATE.lasers.push(laser);
-  setPosition(element, x, y);
-  const laserEffect = new Audio('assets/Sounds/laser3.ogg');
-  laserEffect.play();
-};
-
 const destroyShot = shot => {
   gameContainer.removeChild(shot.element);
   shot.isDead = true;
 };
 
-const updateShots = dt => {
+const createPlayerShot = (x, y) => {
+  const element = document.createElement('img');
+  element.src = `assets/Effects/laserBlue01.png`;
+  element.className = 'laser';
+  gameContainer.appendChild(element);
+  const shot = { x, y, element };
+  GAME_STATE.lasers.push(shot);
+  setPosition(element, x, y);
+  // Play audio for player shots:
+  const laserEffect = new Audio('assets/Sounds/laser3.ogg');
+  laserEffect.play();
+};
+
+const updatePlayerShots = dt => {
   const lasers = GAME_STATE.lasers;
   if (lasers) {
     for (let i = 0; i < lasers.length; i++) {
@@ -207,7 +208,7 @@ const updatePlayer = dt => {
 
   // If space was pressed and we're off cool down, fire a laser:
   if (GAME_STATE.firePressed && GAME_STATE.playerLaserCoolDown <= 0) {
-    createShot(GAME_STATE.playerX + PLAYER_WIDTH, GAME_STATE.playerY);
+    createPlayerShot(GAME_STATE.playerX + PLAYER_WIDTH, GAME_STATE.playerY);
     GAME_STATE.playerLaserCoolDown = LASER_COOLDOWN;
   }
 
@@ -280,15 +281,15 @@ const createEnemyShot = (x, y) => {
 };
 
 const updateEnemyShots = dt => {
-  const shots = GAME_STATE.enemyLasers;
-  for (let i = 0; i < shots.length; i++) {
-    const shot = shots[i];
+  const enemyShots = GAME_STATE.enemyLasers;
+  for (let i = 0; i < enemyShots.length; i++) {
+    const shot = enemyShots[i];
     shot.y += dt * LASER_MAX_SPEED;
     if (shot.y > GAME_AREA_HEIGHT) {
-      destroyShot(shots[i]);
+      // destroyShot(shot);
     }
     setPosition(shot.element, shot.x, shot.y);
-    // const rect1 = laser.enemyLaser.getBoundingClientRect();
+    // const rect1 = shot.element.getBoundingClientRect();
     // const rect2 = document.querySelector('.player').getBoundingClientRect();
     // if (intersect(rect1, rect2)) {
     //   // The player was hit:
@@ -302,18 +303,23 @@ const updateEnemyShots = dt => {
 
 // Cleanup game assets:
 const cleanupGame = () => {
+  // Destroy all our shots:
   const shots = GAME_STATE.lasers;
   for (let i = 0; i < shots.length; i++) {
     destroyShot(shots[i]);
   }
+  // Destroy all enemies left case they won:
   const enemies = GAME_STATE.enemies;
   for (let j = 0; j < enemies.length; j++) {
     destroyEnemyShip(enemies[j]);
   }
+  // Destroy all enemy shots left:
   const enemyShots = GAME_STATE.enemyLasers;
   for (let k = 0; k < enemyShots.length; k++) {
-    destroyShot(enemyShots[k]);
+    shot = enemyShots[k];
+    destroyShot(shot);
   }
+  // Finally destroy the player so they cannot keep interacting:
   destroyPlayer();
 };
 
@@ -334,6 +340,7 @@ const update = () => {
     const missionFailed = new Audio('assets/Sounds/mission_failed.ogg');
     missionFailed.play();
     checkTopScore();
+    // Update the local stroage for score and level to reset it to a new game:
     GAME_STATE.playerScore = 0;
     GAME_STATE.playerLevel = 0;
     writeLocalData();
@@ -342,7 +349,6 @@ const update = () => {
 
   // Did we complete this level?
   if (GAME_STATE.enemies.length === 0) {
-    console.log('won');
     cleanupGame();
     const objective = new Audio('assets/Sounds/mission_completed.ogg');
     objective.play();
@@ -353,7 +359,8 @@ const update = () => {
 
   // Update player and player shots:
   updatePlayer(dt);
-  updateShots(dt);
+  updatePlayerShots(dt);
+  // Update enemies and enemy shots:
   updateEnemyShips(dt);
   updateEnemyShots(dt);
 
