@@ -61,6 +61,19 @@ const nextLevel = () => {
   window.location.reload();
 };
 
+const checkTopScore = () => {
+  if (GAME_STATE.playerScore > GAME_STATE.topScore) {
+    const highScore = new Audio('assets/Sounds/new_highscore.ogg');
+    GAME_STATE.topScore = GAME_STATE.playerScore;
+    setTimeout(function() {
+      highScore.play();
+    }, 2100);
+    writeLocalData();
+    const topScore = document.querySelector('.top-score');
+    topScore.textContent = `Top Score: ${GAME_STATE.topScore}.toFixed(0)`;
+  }
+};
+
 const setPosition = (element, x, y) => {
   element.style.transform = `translate(${x}px, ${y}px)`;
 };
@@ -118,20 +131,20 @@ const onKeyUp = event => {
 
 // Generic game functions:
 const createShot = (x, y) => {
-  const laserContainer = document.createElement('img');
-  laserContainer.src = 'assets/Effects/laserBlue01.png';
-  laserContainer.className = 'laser';
-  gameContainer.appendChild(laserContainer);
-  const laser = { x, y, laserContainer };
+  const element = document.createElement('img');
+  element.src = `assets/Effects/laserBlue01.png`;
+  element.className = 'laser';
+  gameContainer.appendChild(element);
+  const laser = { x, y, element };
   GAME_STATE.lasers.push(laser);
-  setPosition(laserContainer, x, y);
+  setPosition(element, x, y);
   const laserEffect = new Audio('assets/Sounds/laser3.ogg');
   laserEffect.play();
 };
 
-const destroyShot = laser => {
-  gameContainer.removeChild(laser.laserContainer);
-  laser.isDead = true;
+const destroyShot = shot => {
+  gameContainer.removeChild(shot.element);
+  shot.isDead = true;
 };
 
 const updateShots = dt => {
@@ -141,8 +154,8 @@ const updateShots = dt => {
       const laser = lasers[i];
       laser.y -= dt * LASER_MAX_SPEED;
       if (laser.y < 0) destroyShot(laser);
-      setPosition(laser.laserContainer, laser.x, laser.y);
-      const rect1 = laser.laserContainer.getBoundingClientRect();
+      setPosition(laser.element, laser.x, laser.y);
+      const rect1 = laser.element.getBoundingClientRect();
 
       const enemies = GAME_STATE.enemies;
       for (let j = 0; j < enemies.length; j++) {
@@ -243,11 +256,11 @@ const updateEnemyShips = dt => {
       const x = enemy.x + dx;
       const y = enemy.y + dy;
       setPosition(enemy.enemyShip, x, y);
-      // enemy.cooldown -= dt;
-      // if (enemy.cooldown <= 0) {
-      //   createEnemyShot(enemy, x, y);
-      //   enemy.cooldown = ENEMY_LASER_COOLDOWN;
-      // }
+      enemy.cooldown -= dt;
+      if (enemy.cooldown <= 0) {
+        createEnemyShot(enemy, x, y);
+        enemy.cooldown = ENEMY_LASER_COOLDOWN;
+      }
     }
 
     GAME_STATE.enemies = GAME_STATE.enemies.filter(enemy => !enemy.isDead);
@@ -256,20 +269,14 @@ const updateEnemyShips = dt => {
 
 const createEnemyShot = (x, y) => {
   if (GAME_STATE.enemyLasers.length < 20) {
-    const enemyLaser = document.createElement('img');
-    enemyLaser.src = 'assets/Effects/laserRed01.png';
-    enemyLaser.className = 'enemy-laser';
-    gameContainer.appendChild(enemyLaser);
-    const shot = { x, y, enemyLaser };
+    const element = document.createElement('img');
+    element.src = 'assets/Effects/laserRed01.png';
+    element.className = 'enemy-laser';
+    gameContainer.appendChild(element);
+    const shot = { x, y, element };
     GAME_STATE.enemyLasers.push(shot);
-    setPosition(enemyLaser, x, y);
-    // console.log(shot);
+    setPosition(element, x, y);
   }
-};
-
-const destroyEnemyShot = shot => {
-  gameContainer.removeChild(shot.enemyLaser);
-  shot.isDead = true;
 };
 
 const updateEnemyShots = dt => {
@@ -278,18 +285,18 @@ const updateEnemyShots = dt => {
     const shot = shots[i];
     shot.y += dt * LASER_MAX_SPEED;
     if (shot.y > GAME_AREA_HEIGHT) {
-      // destroyEnemyShot(shot.enemyLaser);
+      destroyShot(shots[i]);
     }
-    setPosition(shot.enemyLaser, shot.x, shot.y);
-    const rect1 = laser.enemyLaser.getBoundingClientRect();
-    const rect2 = document.querySelector('.player').getBoundingClientRect();
-    if (intersect(rect1, rect2)) {
-      // The player was hit:
-      destroyPlayer();
-      destroyShot(shot);
-      GAME_STATE.gameOver = true;
-      break;
-    }
+    setPosition(shot.element, shot.x, shot.y);
+    // const rect1 = laser.enemyLaser.getBoundingClientRect();
+    // const rect2 = document.querySelector('.player').getBoundingClientRect();
+    // if (intersect(rect1, rect2)) {
+    //   // The player was hit:
+    //   destroyPlayer();
+    //   destroyShot(shot);
+    //   GAME_STATE.gameOver = true;
+    //   break;
+    // }
   }
 };
 
@@ -310,19 +317,6 @@ const cleanupGame = () => {
   destroyPlayer();
 };
 
-const checkTopScore = () => {
-  if (GAME_STATE.playerScore > GAME_STATE.topScore) {
-    const highScore = new Audio('assets/Sounds/new_highscore.ogg');
-    GAME_STATE.topScore = GAME_STATE.playerScore;
-    setTimeout(function() {
-      highScore.play();
-    }, 2100);
-    writeLocalData();
-    const topScore = document.querySelector('.top-score');
-    topScore.textContent = `Top Score: ${GAME_STATE.topScore}`;
-  }
-};
-
 // Main game update loop:
 const update = () => {
   const topScore = document.querySelector('.top-score');
@@ -333,6 +327,7 @@ const update = () => {
   const currentTime = Date.now();
   const dt = (currentTime - GAME_STATE.lastTime) / 1000;
 
+  // Did we lose?
   if (GAME_STATE.gameOver) {
     cleanupGame();
     document.querySelector('.lost').style.display = 'block';
@@ -345,7 +340,9 @@ const update = () => {
     return;
   }
 
+  // Did we complete this level?
   if (GAME_STATE.enemies.length === 0) {
+    console.log('won');
     cleanupGame();
     const objective = new Audio('assets/Sounds/mission_completed.ogg');
     objective.play();
@@ -358,11 +355,12 @@ const update = () => {
   updatePlayer(dt);
   updateShots(dt);
   updateEnemyShips(dt);
-  // updateEnemyShots(dt);
+  updateEnemyShots(dt);
 
-  topScore.textContent = `Top Score: ${GAME_STATE.topScore.toFixed(1)}`;
+  // Update top score, level and score:
+  topScore.textContent = `Top Score: ${GAME_STATE.topScore.toFixed(0)}`;
   level.textContent = `Level: ${GAME_STATE.playerLevel + 1}`;
-  score.textContent = `Score: ${GAME_STATE.playerScore.toFixed(1)}`;
+  score.textContent = `Score: ${GAME_STATE.playerScore.toFixed(0)}`;
 
   // Update the lastTime to be the currentTime for next frame dt calcs:
   GAME_STATE.lastTime = currentTime;
