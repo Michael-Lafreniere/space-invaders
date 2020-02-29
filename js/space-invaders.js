@@ -70,7 +70,7 @@ const checkTopScore = () => {
     }, 2100);
     writeLocalData();
     const topScore = document.querySelector('.top-score');
-    topScore.textContent = `Top Score: ${GAME_STATE.topScore}.toFixed(0)`;
+    topScore.textContent = `Top Score: ${GAME_STATE.topScore.toFixed(0)}`;
   }
 };
 
