@@ -13,7 +13,8 @@ const PLAYER_MAX_SPEED = 450;
 const LASER_MAX_SPEED = 250;
 const LASER_COOLDOWN = 0.45;
 let ENEMY_LASER_MAX_SPEED = 250;
-let ENEMY_LASER_COOLDOWN = 0.45;
+let ENEMY_LASER_COOLDOWN = 2.45;
+let ENEMY_MAX_LASERS = 10;
 
 const ENEMIES_PER_ROW = 8;
 const ENEMY_SHIP_VALUE = 50;
@@ -129,7 +130,7 @@ const onKeyUp = event => {
   }
 };
 
-// Generic game functions:
+// Shot handling functions:
 const destroyShot = shot => {
   gameContainer.removeChild(shot.element);
   shot.isDead = true;
@@ -143,9 +144,22 @@ const createPlayerShot = (x, y) => {
   const shot = { x, y, element };
   GAME_STATE.lasers.push(shot);
   setPosition(element, x, y);
+
   // Play audio for player shots:
   const laserEffect = new Audio('assets/Sounds/laser3.ogg');
   laserEffect.play();
+};
+
+const createEnemyShot = (x, y) => {
+  if (GAME_STATE.enemyLasers.length < ENEMY_MAX_LASERS) {
+    const element = document.createElement('img');
+    element.src = 'assets/Effects/laserRed01.png';
+    element.className = 'enemy-laser';
+    gameContainer.appendChild(element);
+    const shot = { x, y, element };
+    GAME_STATE.enemyLasers.push(shot);
+    setPosition(element, x, y);
+  }
 };
 
 const updatePlayerShots = dt => {
@@ -155,7 +169,7 @@ const updatePlayerShots = dt => {
       const laser = lasers[i];
       laser.y -= dt * LASER_MAX_SPEED;
       if (laser.y < 0) destroyShot(laser);
-      setPosition(laser.element, laser.x, laser.y);
+      else setPosition(laser.element, laser.x, laser.y);
       const rect1 = laser.element.getBoundingClientRect();
 
       const enemies = GAME_STATE.enemies;
@@ -173,12 +187,34 @@ const updatePlayerShots = dt => {
       }
     }
 
-    // Filter and remove any dead lasers from the array:
-    GAME_STATE.lasers = GAME_STATE.lasers.filter(laser => !laser.isDead);
+    // Filter and remove any dead shots from the array:
+    GAME_STATE.lasers = GAME_STATE.lasers.filter(shot => !shot.isDead);
   }
 };
 
-// Player functions:
+const updateEnemyShots = dt => {
+  const enemyShots = GAME_STATE.enemyLasers;
+  for (let i = 0; i < enemyShots.length; i++) {
+    const shot = enemyShots[i];
+    shot.y += dt * LASER_MAX_SPEED;
+    if (shot.y > GAME_AREA_HEIGHT) destroyShot(shot);
+    else setPosition(shot.element, shot.x, shot.y);
+    const rect1 = shot.element.getBoundingClientRect();
+    const rect2 = document.querySelector('.player').getBoundingClientRect();
+    if (intersect(rect1, rect2)) {
+      // The player was hit:
+      //   destroyPlayer();
+      destroyShot(shot);
+      //   GAME_STATE.gameOver = true;
+      break;
+    }
+  }
+
+  // Filter and remove any dead shots from the array:
+  GAME_STATE.enemyLasers = GAME_STATE.enemyLasers.filter(shot => !shot.isDead);
+};
+
+// Player ship functions:
 const createPlayer = container => {
   GAME_STATE.playerX = GAME_AREA_WIDTH / 2;
   GAME_STATE.playerY = GAME_AREA_HEIGHT - PLAYER_Y_OFFSET;
@@ -228,11 +264,12 @@ const createEnemyShip = (x, y, index) => {
   enemyShip.src = `assets/Enemies/ship${color}_manned.png`;
   enemyShip.className = 'enemy';
   gameContainer.appendChild(enemyShip);
+  const laserCoolDown = random(0.5, ENEMY_LASER_COOLDOWN);
   const enemy = {
     x,
     y,
     enemyShip,
-    cooldown: random(0.5, ENEMY_LASER_COOLDOWN)
+    cooldown: laserCoolDown
   };
   GAME_STATE.enemies.push(enemy);
   setPosition(enemyShip, x, y);
@@ -259,45 +296,12 @@ const updateEnemyShips = dt => {
       setPosition(enemy.enemyShip, x, y);
       enemy.cooldown -= dt;
       if (enemy.cooldown <= 0) {
-        createEnemyShot(enemy, x, y);
+        createEnemyShot(x, y);
         enemy.cooldown = ENEMY_LASER_COOLDOWN;
       }
     }
 
     GAME_STATE.enemies = GAME_STATE.enemies.filter(enemy => !enemy.isDead);
-  }
-};
-
-const createEnemyShot = (x, y) => {
-  if (GAME_STATE.enemyLasers.length < 20) {
-    const element = document.createElement('img');
-    element.src = 'assets/Effects/laserRed01.png';
-    element.className = 'enemy-laser';
-    gameContainer.appendChild(element);
-    const shot = { x, y, element };
-    GAME_STATE.enemyLasers.push(shot);
-    setPosition(element, x, y);
-  }
-};
-
-const updateEnemyShots = dt => {
-  const enemyShots = GAME_STATE.enemyLasers;
-  for (let i = 0; i < enemyShots.length; i++) {
-    const shot = enemyShots[i];
-    shot.y += dt * LASER_MAX_SPEED;
-    if (shot.y > GAME_AREA_HEIGHT) {
-      // destroyShot(shot);
-    }
-    setPosition(shot.element, shot.x, shot.y);
-    // const rect1 = shot.element.getBoundingClientRect();
-    // const rect2 = document.querySelector('.player').getBoundingClientRect();
-    // if (intersect(rect1, rect2)) {
-    //   // The player was hit:
-    //   destroyPlayer();
-    //   destroyShot(shot);
-    //   GAME_STATE.gameOver = true;
-    //   break;
-    // }
   }
 };
 
