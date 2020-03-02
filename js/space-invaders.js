@@ -2,27 +2,31 @@
 const GAME_AREA_WIDTH = 800;
 const GAME_AREA_HEIGHT = 600;
 
+// Keys for the game:
 const KEY_SPACE = 32;
 const KEY_LEFT = 37;
 const KEY_RIGHT = 39;
 
+// Player placement info:
 const PLAYER_Y_OFFSET = 45;
 const PLAYER_WIDTH = 20;
 const PLAYER_MAX_SPEED = 450;
 
-const LASER_MAX_SPEED = 250;
-const LASER_COOLDOWN = 0.45;
-let ENEMY_LASER_MAX_SPEED = 250;
-let ENEMY_LASER_COOLDOWN = 2.45;
-let ENEMY_MAX_LASERS = 10;
-
+// Enemy placement info:
 const ENEMIES_PER_ROW = 8;
-const ENEMY_SHIP_VALUE = 50;
+let ENEMY_SHIP_VALUE = 50;
 const ENEMY_EDGE_PADDING = 65;
 const ENEMY_VERT_PADDING = 70;
 const ENEMY_VERT_SPACING = 80;
 const ENEMY_SPACING =
   (GAME_AREA_WIDTH - ENEMY_EDGE_PADDING * 2) / (ENEMIES_PER_ROW - 1);
+
+// Shot info:
+const LASER_MAX_SPEED = 250;
+const LASER_COOLDOWN = 0.45;
+let ENEMY_LASER_MAX_SPEED = 250;
+let ENEMY_LASER_COOLDOWN = 2.45;
+let ENEMY_MAX_LASERS = 10;
 
 // State:
 const GAME_STATE = {
@@ -68,7 +72,7 @@ const checkTopScore = () => {
     GAME_STATE.topScore = GAME_STATE.playerScore;
     setTimeout(function() {
       highScore.play();
-    }, 2100);
+    }, 2150);
     writeLocalData();
     const topScore = document.querySelector('.top-score');
     topScore.textContent = `Top Score: ${GAME_STATE.topScore.toFixed(0)}`;
@@ -178,10 +182,9 @@ const updatePlayerShots = dt => {
         if (enemy.isDead) continue;
         const rect2 = enemy.enemyShip.getBoundingClientRect();
         if (intersect(rect1, rect2)) {
-          destroyEnemy(enemy);
+          destroyEnemyShip(enemy);
           destroyShot(laser);
-          GAME_STATE.playerScore +=
-            ENEMY_SHIP_VALUE + GAME_STATE.playerLevel * 1.05;
+          GAME_STATE.playerScore += ENEMY_SHIP_VALUE;
           break;
         }
       }
@@ -203,9 +206,9 @@ const updateEnemyShots = dt => {
     const rect2 = document.querySelector('.player').getBoundingClientRect();
     if (intersect(rect1, rect2)) {
       // The player was hit:
-      //   destroyPlayer();
+      destroyPlayer();
       destroyShot(shot);
-      //   GAME_STATE.gameOver = true;
+      GAME_STATE.gameOver = true;
       break;
     }
   }
@@ -215,13 +218,13 @@ const updateEnemyShots = dt => {
 };
 
 // Player ship functions:
-const createPlayer = container => {
+const createPlayer = () => {
   GAME_STATE.playerX = GAME_AREA_WIDTH / 2;
   GAME_STATE.playerY = GAME_AREA_HEIGHT - PLAYER_Y_OFFSET;
   const player = document.createElement('img');
   player.src = 'assets/Ships/spaceShips_001.png';
   player.className = 'player';
-  container.appendChild(player);
+  gameContainer.appendChild(player);
   setPosition(player, GAME_STATE.playerX, GAME_STATE.playerY);
 };
 
@@ -275,7 +278,7 @@ const createEnemyShip = (x, y, index) => {
   setPosition(enemyShip, x, y);
 };
 
-const destroyEnemy = enemy => {
+const destroyEnemyShip = enemy => {
   gameContainer.removeChild(enemy.enemyShip);
   enemy.isDead = true;
   const destroyEnemyShipSound = new Audio('assets/Sounds/phaseJump3.ogg');
@@ -340,9 +343,9 @@ const update = () => {
   // Did we lose?
   if (GAME_STATE.gameOver) {
     cleanupGame();
-    document.querySelector('.lost').style.display = 'block';
     const missionFailed = new Audio('assets/Sounds/mission_failed.ogg');
     missionFailed.play();
+    document.querySelector('.lost').style.display = 'block';
     checkTopScore();
     // Update the local stroage for score and level to reset it to a new game:
     GAME_STATE.playerScore = 0;
@@ -358,6 +361,12 @@ const update = () => {
     objective.play();
     document.querySelector('.won').style.display = 'block';
     checkTopScore();
+    // Handle ramping up level difficulty:
+    if (ENEMY_MAX_LASERS < 20) ENEMY_MAX_LASERS += 1;
+    if (ENEMY_LASER_COOLDOWN > 0.5) ENEMY_LASER_COOLDOWN -= 0.1;
+    if (GAME_STATE.playerLevel > 10) ENEMY_LASER_MAX_SPEED = 300;
+    ENEMY_SHIP_VALUE += 5;
+    console.log('max lasers:', ENEMY_MAX_LASERS);
     return;
   }
 
@@ -412,7 +421,7 @@ const initialize = () => {
   window.addEventListener('keyup', onKeyUp);
 
   // Create the player:
-  createPlayer(gameContainer);
+  createPlayer();
 
   // Create the enemies:
   createEnemyShips();
