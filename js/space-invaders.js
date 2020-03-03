@@ -205,7 +205,7 @@ const updateEnemyShots = dt => {
     const rect1 = shot.element.getBoundingClientRect();
     const rect2 = document.querySelector('.player').getBoundingClientRect();
     if (intersect(rect1, rect2)) {
-      // The player was hit:
+      // The player was hit/killed:
       destroyPlayer();
       destroyShot(shot);
       GAME_STATE.gameOver = true;
@@ -251,6 +251,7 @@ const updatePlayer = dt => {
     GAME_STATE.playerLaserCoolDown = LASER_COOLDOWN;
   }
 
+  // Count down the weapon shoot time:
   if (GAME_STATE.playerLaserCoolDown > 0) {
     GAME_STATE.playerLaserCoolDown -= dt;
   }
@@ -267,12 +268,12 @@ const createEnemyShip = (x, y, index) => {
   enemyShip.src = `assets/Enemies/ship${color}_manned.png`;
   enemyShip.className = 'enemy';
   gameContainer.appendChild(enemyShip);
-  const laserCoolDown = random(0.5, ENEMY_LASER_COOLDOWN);
   const enemy = {
     x,
     y,
     enemyShip,
-    cooldown: laserCoolDown
+    // Sets a random count down before an enemy can fire it's first shot:
+    cooldown: random(0.5, ENEMY_LASER_COOLDOWN)
   };
   GAME_STATE.enemies.push(enemy);
   setPosition(enemyShip, x, y);
@@ -287,6 +288,7 @@ const destroyEnemyShip = enemy => {
 
 const updateEnemyShips = dt => {
   const time = GAME_STATE.lastTime / 1000;
+  // Moves the enemy ships in a semi-ciruclar way:
   const dx = Math.sin(time) * 40;
   const dy = Math.cos(time) * 10;
 
@@ -297,6 +299,7 @@ const updateEnemyShips = dt => {
       const x = enemy.x + dx;
       const y = enemy.y + dy;
       setPosition(enemy.enemyShip, x, y);
+      // Check to see if it's time for our enemy ships to fire:
       enemy.cooldown -= dt;
       if (enemy.cooldown <= 0) {
         createEnemyShot(x, y);
@@ -366,7 +369,6 @@ const update = () => {
     if (ENEMY_LASER_COOLDOWN > 0.5) ENEMY_LASER_COOLDOWN -= 0.1;
     if (GAME_STATE.playerLevel > 10) ENEMY_LASER_MAX_SPEED = 300;
     ENEMY_SHIP_VALUE += 5;
-    console.log('max lasers:', ENEMY_MAX_LASERS);
     return;
   }
 
@@ -398,7 +400,7 @@ const createEnemyShips = () => {
   }
 };
 
-// Reads all the previous levels, top scores, etc.
+// Reads/Writes all the levels, top scores, etc.
 const readLocalData = () => {
   GAME_STATE.playerLevel = JSON.parse(localStorage.getItem('level')) || 0;
   GAME_STATE.playerScore = JSON.parse(localStorage.getItem('score')) || 0;
