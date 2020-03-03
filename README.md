@@ -2,7 +2,7 @@
 
 Space Invaders is a 1978 arcade game created by [Tomohiro Nishikado](https://en.wikipedia.org/wiki/Tomohiro_Nishikado). This is a modern take on that original game with it's own unique spin. As you progress the invaders get to fire more shorts and their shots speed up to a max speed. At the same time your rewards for destroying an enemy ship goes up every level you survive.
 
-[Space Invaders GIF](https://github.com/Michael-Lafreniere/TheWeatherSite/blob/master/Space Invaders - The Clone Wars.gif 'GIF of the site')
+[Space Invaders GIF](https://github.com/Michael-Lafreniere/space-invaders/blob/master/Space Invaders - The Clone Wars.gif 'GIF of the site')
 
 ## Controls
 
